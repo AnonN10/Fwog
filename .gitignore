@@ -42,5 +42,4 @@ build/
 # Large/test assets
 /example/models
 
-# Clang cache
 .cache/
