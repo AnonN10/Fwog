@@ -49,10 +49,11 @@ namespace RSM
     float alphaMoments = 0.05f;
     float phiLuminance = 1.0f;
     float phiNormal = 0.3f;
-    float phiDepth = 0.1f;
+    float phiDepth = 0.2f;
     bool rsmFiltered = false;
     bool rsmFilteredSkipAlbedoModulation = false;
     bool seedEachFrame = true;
+    bool useSeparableFilter = true;
 
   private:
     struct RsmUniforms
@@ -91,14 +92,17 @@ namespace RSM
       glm::vec3 viewPos;
       float stepWidth;
       glm::ivec2 targetDim;
+      glm::ivec2 direction;
       float phiLuminance;
       float phiNormal;
       float phiDepth;
       uint32_t _padding00;
-      uint32_t _padding01;
-      uint32_t _padding02;
     };
 
+    static constexpr uint32_t SMALL_RSM_SIZE = 256;
+    int inverseResolutionScale;
+    uint32_t internalWidth;
+    uint32_t internalHeight;
     glm::mat4 viewProjPrevious{1};
     glm::uint seedX;
     glm::uint seedY;
@@ -114,6 +118,7 @@ namespace RSM
     Fwog::ComputePipeline bilateral5x5Pipeline;
     Fwog::ComputePipeline variancePipeline;
     Fwog::ComputePipeline modulatePipeline;
+    Fwog::ComputePipeline blitPipeline;
     Fwog::Texture indirectUnfilteredTex;
     Fwog::Texture indirectUnfilteredTexPrev; // for temporal accumulation
     Fwog::Texture indirectFilteredTex;
@@ -122,6 +127,14 @@ namespace RSM
     Fwog::Texture momentsTex;
     Fwog::Texture momentsHistoryTex;
     Fwog::Texture varianceTex;
+    Fwog::Texture illuminationUpscaled;
+    Fwog::Texture rsmFluxSmall;
+    Fwog::Texture rsmNormalSmall;
+    Fwog::Texture rsmDepthSmall;
     std::optional<Fwog::Texture> noiseTex;
+    std::optional<Fwog::Texture> gNormalSmall;
+    std::optional<Fwog::Texture> gDepthSmall;
+    std::optional<Fwog::Texture> gNormalPrevSmall;
+    std::optional<Fwog::Texture> gDepthPrevSmall;
   };
 } // namespace RSM

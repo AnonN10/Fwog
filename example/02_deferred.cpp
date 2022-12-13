@@ -198,12 +198,6 @@ static Fwog::GraphicsPipeline CreateShadowPipeline()
     .vertexShader = &vs,
     .fragmentShader = &fs,
     .vertexInputState = {sceneInputBindingDescs},
-    .rasterizationState =
-      {
-        .depthBiasEnable = true,
-        .depthBiasConstantFactor = 0.0f,
-        .depthBiasSlopeFactor = 2.0f,
-      },
     .depthState = {.depthTestEnable = true, .depthWriteEnable = true},
   });
 }
@@ -249,6 +243,7 @@ private:
 
   // scene parameters
   float sunPosition = 0;
+  float sunPosition2 = 0;
 
   // transient variables
   double illuminationTime = 0;
@@ -362,7 +357,7 @@ void DeferredApplication::OnRender([[maybe_unused]] double dt)
   std::swap(frame.gNormal, frame.gNormalPrev);
 
   shadingUniforms = ShadingUniforms{
-    .sunDir = glm::normalize(glm::rotate(sunPosition, glm::vec3{1, 0, 0}) * glm::vec4{-.1, -.3, -.6, 0}),
+    .sunDir = glm::normalize(glm::rotate(sunPosition, glm::vec3{1, 0, 0}) * glm::rotate(sunPosition2, glm::vec3(0, 1, 0)) * glm::vec4{-.1, -.3, -.6, 0}),
     .sunStrength = glm::vec4{2, 2, 2, 0},
   };
 
@@ -384,12 +379,6 @@ void DeferredApplication::OnRender([[maybe_unused]] double dt)
   ss.addressModeU = Fwog::AddressMode::REPEAT;
   ss.addressModeV = Fwog::AddressMode::REPEAT;
   auto nearestSampler = Fwog::Sampler(ss);
-
-  ss.compareEnable = true;
-  ss.compareOp = Fwog::CompareOp::LESS;
-  ss.minFilter = Fwog::Filter::LINEAR;
-  ss.magFilter = Fwog::Filter::LINEAR;
-  auto rsmShadowSampler = Fwog::Sampler(ss);
 
   // Render scene geometry to the g-buffer
   Fwog::RenderAttachment gAlbedoAttachment{
@@ -512,7 +501,7 @@ void DeferredApplication::OnRender([[maybe_unused]] double dt)
     Fwog::Cmd::BindSampledImage(1, *frame.gNormal, nearestSampler);
     Fwog::Cmd::BindSampledImage(2, *frame.gDepth, nearestSampler);
     Fwog::Cmd::BindSampledImage(3, frame.rsm->GetIndirectLighting(), nearestSampler);
-    Fwog::Cmd::BindSampledImage(4, rsmDepth, rsmShadowSampler);
+    Fwog::Cmd::BindSampledImage(4, rsmDepth, nearestSampler);
     Fwog::Cmd::BindUniformBuffer(0, globalUniformsBuffer, 0, globalUniformsBuffer.Size());
     Fwog::Cmd::BindUniformBuffer(1, shadingUniformsBuffer, 0, shadingUniformsBuffer.Size());
     Fwog::Cmd::Draw(3, 1, 0, 0);
@@ -543,6 +532,7 @@ void DeferredApplication::OnGui(double dt)
   ImGui::Text("Indirect Illumination: %f ms", illuminationTime);
 
   ImGui::SliderFloat("Sun Angle", &sunPosition, -1.2f, 2.1f);
+  ImGui::SliderFloat("Sun Angle 2", &sunPosition2, -3.142f, 3.142f);
 
   ImGui::Separator();
 
